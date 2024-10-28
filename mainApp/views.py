@@ -1,6 +1,11 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,HttpResponseRedirect
 from .models import * #Table se data get karne k liye 
 from django.db.models import Q
+from django.contrib.auth import authenticate,login,logout
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+
 def home(Request):
     data = Product.objects.all()
     data = data[::-1]
@@ -17,7 +22,6 @@ def checkout(Request):
 
 def contact(Request):
     return render(Request,"contact.html")
-
 
 def shop(Request,mc,sc,br):
 
@@ -77,7 +81,7 @@ def priceFilter(Request,mc,sc,br):
         subcategory = Subcategory.objects.all()
         brand = Brand.objects.all()
     else:
-        return redirect("/shop/All/All/All")
+        return HttpResponseRedirect("/shop/All/All/All")
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
@@ -115,7 +119,7 @@ def sortFilter(Request,mc,sc,br):
         subcategory = Subcategory.objects.all()
         brand = Brand.objects.all()
     else:
-        return redirect("/shop/All/All/All")
+        return HttpResponseRedirect("/shop/All/All/All")
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
@@ -136,4 +140,81 @@ def searchPage(Request):
         return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': 'All', 'sc': 'All', 'br': 'All','count':count})
 
     else:
-        return redirect("/shop/All/All/All")
+        return HttpResponseRedirect("/shop/All/All/All")
+
+def loginPage(Request):
+    if (Request.method=="POST"):
+        username = Request.POST.get('username')
+        password = Request.POST.get('password')
+
+        # Check if any field is blank
+        if not all([username, password]):
+            print("2222222222222")
+            print(Request.POST)
+            messages.error(Request, "Please fill all fields!")
+            return HttpResponseRedirect("/login/")
+            # return render(Request,"login.html")
+
+
+        user = authenticate(username=username,password=password)
+        if user is not None:
+            login(Request,user)
+            if (user.is_superuser):
+                return HttpResponseRedirect('/admin')
+            else:
+                return HttpResponseRedirect('/profile')
+        else:
+            messages.error(Request,"Invalid Username or Password...")
+    return render(Request,"login.html")
+
+def signupPage(Request):
+    if (Request.method=="POST"):
+        # print(Request.POST)
+        name = Request.POST.get('fullname')
+        username = Request.POST.get('username')
+        email = Request.POST.get('email')
+        phone = Request.POST.get('phone')
+        password = Request.POST.get('password')
+        cpassword = Request.POST.get('cpassword')
+
+        # Check if any field is blank
+        if not all([name, username, email, phone, password, cpassword]):
+            print("111111111111111111")
+            print(Request.POST)
+            messages.error(Request, "Please fill all fields!")
+            return HttpResponseRedirect("/signup/")
+            # return render(Request,"signup.html")
+
+        if (password == cpassword):
+            try:
+                user = User(username=username)
+                user.set_password(password)
+                user.save()
+                buyer = Buyer()
+                buyer.name = name
+                buyer.username = username
+                buyer.email = email
+                buyer.phone = phone
+                buyer.password = password
+                buyer.save()
+                return HttpResponseRedirect('/login')
+
+            except:
+                    messages.error(Request,"User Name Already Exist!!!")
+        else:
+            messages.error(Request,"Password and Confirm Password does'nt matched!!!")
+
+    return render(Request,"signup.html")
+
+def logoutPage(Request):
+    logout(Request)
+    return HttpResponseRedirect('/login/')
+
+@login_required(login_url="/login/")
+def profilePage(Request):
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect('/admin/')
+    else:
+        buyer = Buyer.objects.get(username=Request.user.username)
+    return render(Request,'profile.html',{'data':buyer})

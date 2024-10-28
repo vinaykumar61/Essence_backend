@@ -1,0 +1,64 @@
+{% extends 'index.html' %}
+{% block title %}
+<title>Essence - Fashion World | Profile</title>
+{% endblock %}
+{% block body %}
+<div class="cotainer-fluid p-3"> <!-- py-3-->
+    <div class="row">
+        <div class="col-md-6">
+            {% if data.pic %}
+            <img src="{{data.pic.url}}" style="height: 510px;"  width="100%" alt="">
+            {% else %}
+            <img src="/static/img/core-img/turkish.jpg" style="height: 510px;"  width="100%" alt="">
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <table class="table table-bordered">
+                <tr>
+                    <th>Name</th>
+                    <td>{{data.name}}</td>
+                </tr>
+                <tr>
+                    <th>User Name</th>
+                    <td>{{data.username}}</td>
+                </tr>
+                <tr>
+                    <th>Email Address</th>
+                    <td>{{data.email}}</td>
+                </tr>
+                <tr>
+                    <th>Phone Number</th>
+                    <td>{{data.phone}}</td>
+                </tr>
+                <tr>
+                    <th>Address Line 1</th>
+                    <td>{{data.addressline1}}</td>
+                </tr>
+                <tr>
+                    <th>Address Line 2</th>
+                    <td>{{data.addressline2}}</td>
+                </tr>
+                <tr>
+                    <th>Address Line 3</th>
+                    <td>{{data.addressline3}}</td>
+                </tr>
+                <tr>
+                    <th>PIN</th>
+                    <td>{{data.pin}}</td>
+                </tr>
+                <tr>
+                    <th>City</th>
+                    <td>{{data.city}}</td>
+                </tr>
+                <tr>
+                    <th>State</th>
+                    <td>{{data.state}}</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><a href="/update-profile" class="btn btn-primary btn-sm w-100">Update Profile</a></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -102,17 +102,17 @@
                 <!-- User Login Info -->
                 {% if request.user.is_authenticated %}
                 <div class="user-login-info">
-                    <a href="#"><i class="bi bi-person-circle" style="font-size:20px;"></i></a>
+                    <a href="/profile/"><i class="bi bi-person-circle" style="font-size:20px;"></i> Profile</a>
                 </div>
                 {% endif %}
                 <!-- Favourite Area -->
                  <div class="favourite-area">
                     {% if request.user.is_authenticated %}
                     <!-- Login -->
-                    <a href="#"><i class="bi bi-box-arrow-in-right" style="font-size:20px;"></i> Logout</a>
+                    <a href="/logout/"><i class="bi bi-box-arrow-in-right" style="font-size:20px;"></i> Logout</a>
                     <!-- Logout -->
                     {% else %}
-                    <a href="#"><i class="bi bi-box-arrow-in-right" style="font-size:20px;"></i>Login</a>
+                    <a href="/login/"><i class="bi bi-box-arrow-in-right" style="font-size:20px;"></i>Login</a>
                     {% endif %}
                 </div>
                 <!-- Cart Area -->
