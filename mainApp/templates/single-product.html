@@ -4,7 +4,7 @@
 {% endblock %}
 {% block body %}
     <!-- ##### Single Product Details Area Start ##### -->
-    <section class="single_product_details_area d-flex align-items-center">
+    <section class="single_product_details_area d-flex align-items-center pt-2">
 
         <!-- Single Product Thumb -->
         <div class="single_product_thumb clearfix">
@@ -24,7 +24,7 @@
         <div class="single_product_desc clearfix">
             <span>{{data.maincategory}}/{{data.subcategory}}</span>
             <a href="cart.html">
-                <h2>{{data.name}}</h2>
+                <h2 style="color:navy;">{{data.name}}</h2>
             </a>
             <p class="product-price"><span class="old-price">&#8377;{{data.baseprice}}</span> &#8377;{{data.finalprice}}</p>
             <p class="product-price">Discount {{data.discount}}%off</p>
@@ -54,11 +54,11 @@
                 <div class="cart-fav-box d-flex align-items-center">
                     <!-- Cart -->
                     {% if data.stock %}
-                    <a type="submit" href="/add-to-cart/"  name="addtocart" value="5" class="btn essence-btn text-light">Add to cart</a>
+                    <a type="submit" href="/add-to-cart/{{data.id}}/"  name="addtocart" value="5" class="btn essence-btn text-light">Add to cart</a>
                     {% endif %}
                     <!-- Favourite -->
                     <div class="product-favourite ml-4">
-                        <a href="/add-to-wishlist/" class="favme fa fa-heart">Add to Wishlist</a>
+                        <a href="/add-to-wishlist/" class="favme fa fa-heart text-primary">Add to Wishlist</a>
                     </div>
                 </div>
             </form>

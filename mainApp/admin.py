@@ -9,5 +9,7 @@ admin.site.register(
         Subcategory,
         Brand,
         Product,
+        Checkout,
+        CheckoutProducts,
     )
 )

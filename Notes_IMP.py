@@ -164,3 +164,79 @@ add decorator
 profile -update-pending
 
 Start 6-Feb Video
+
+#push code on main=Added the login,signup,logout and user profile functionality
+update profile-
+enctype="multipart/form-data"- image ya mmedia file lo encrypte karna padta hai
+
+profile-update-Done 
+Message bootstrap version 00:21:46
+
+Vide0-2 Add to cart and Wishlist
+Start session and cookie session 
+
+session and cookie ki video skip hai maine project ko jaldi complete karne k iye 
+
+#Start 08-02-2023 part-2
+Add to cart/
+cart/
+
+cart page bana diya
+
+#09-02-2022 video-1
+def updateCartPage ------- 
+
+500   5  5-1
+2500    2000
+
+cart-add to cart,display,update and delete cart ho gya 
+
+maine bootstrap css ka link 4.1 wala lagaya hai index.html file jiski wajah se margin and padding kharab ho gya hai usko set karna hai cart and sabhi page m
+
+
+
+#13-02-2023
+
+#Checkout and right side bar 
+
+video-1
+12:27 
+
+total card ki functionality laga di views m and index.html m 
+card icon m  show hogi and right side m bhi dikhegi
+
+
+# Checkout page start
+Billing Details and Your Order and Payment mode
+
+video-2 start
+
+Created Checkout &Checkout product table to store the data and order the product.
+
+status = ((0,"Order Placed"),(1,"Not Packed"),(2,"Packed"),(3,"Ready to Dispatch"),(4,"Dispatched"),(5,"Out for Delivery"),(6,"Delivered"),(7,"Cancelled"))
+payment = ((0,"Pending"),(1,"Done"))
+mode = ((0,"COD"),(1,"Net Banking"))
+class Checkout(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Buyer,on_delete=models.CASCADE)
+    orderStatus = models.IntegerField(choices=status,default=0) 0 means -> Order Placed
+    paymentMode = models.CharField(choices=mode,default=0)0->COD
+    paymentStatus = models.CharField(choices=payment,default=0)
+    
+video-1 Done table migrations and migrate
+
+video-2 Start 
+Thak You and confirmation page done
+
+Order id ya checkout ek hi baat hai
+
+video-3 complete
+
+video-4 start:-
+Agar checkout page par total product 0 hai to hum cart page redirect kara denge 
+
+aur agar koi direct Checkout url ko bhi hit karega to cart page par chala jayega
+
+Start 16-02-2023 part1 :
+
+

@@ -15,6 +15,8 @@ class Buyer(models.Model):
     state = models.CharField(max_length=30)  # State of the buyer
     pic = models.ImageField(upload_to="user")  # Profile picture of the buyer
     
+    def __str__(self):
+        return self.username+"/"+self.name+"/"+self.email
 # Table2: Stores product main categories (e.g., Male, Female, Kids)
 class Maincategory(models.Model):
     id = models.AutoField(primary_key=True)
@@ -61,3 +63,52 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+status = (
+    (0, "Order Placed"),
+    (1, "Not Packed"),
+    (2, "Packed"),
+    (3, "Ready to Dispatch"),
+    (4, "Dispatched"),
+    (5, "Out for Delivery"),
+    (6, "Delivered"),
+    (7, "Cancelled"),
+)
+payment = (
+    (0, "Pending"),
+    (1, "Done"),
+)
+mode = (
+    (0, "COD"),
+    (1, "Net Banking"),
+)
+class Checkout(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Buyer,on_delete=models.CASCADE)
+    orderStatus = models.IntegerField(choices=status,default=0)
+    paymentMode = models.IntegerField(choices=mode,default=0)
+    paymentStatus = models.IntegerField(choices=payment,default=0)
+    rppid = models.CharField(max_length=50,default="",null=True,blank=True)
+    totalAmount = models.IntegerField()
+    shippingAmount = models.IntegerField()
+    finalAmount = models.IntegerField()
+    time = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)+" "+self.user.username
+class CheckoutProducts(models.Model):
+    id = models.AutoField(primary_key=True)
+    checkout = models.ForeignKey(Checkout,on_delete=models.CASCADE)
+    pid = models.IntegerField(default=None)#default=None (migrations k liye) means pichle jitne bhi records bane hai us coloum m pid kya dale 
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=50)
+    size = models.CharField(max_length=50)
+    price = models.IntegerField()
+    qty = models.IntegerField()
+    total = models.IntegerField()
+    pic = models.CharField(max_length=50)
+
+
+
+
+

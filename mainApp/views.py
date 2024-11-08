@@ -17,8 +17,67 @@ def home(Request):
 
     return render(Request,"index.html",{'data':data,'brand':brand,'subcategory':subcategory})
 
+@login_required(login_url="/login/")
 def checkout(Request):
-    return render(Request,"checkout.html")
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect('/admin/')
+    else:
+        buyer = Buyer.objects.get(username=Request.user.username)
+    total = Request.session.get("total",0)
+    if(total==0):
+        return HttpResponseRedirect("/cart/")
+    return render(Request,"checkout.html",{'data':buyer})
+
+@login_required(login_url="/login/")
+def placeOrder(Request):
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect('/admin/')
+    else:
+        total = Request.session.get("total",0)
+        if(total):
+            shipping = Request.session.get("shipping",0)
+            final = Request.session.get('final',0)
+            buyer = Buyer.objects.get(username=Request.user.username)
+            #Checkout ka instance generate karenge
+            checkout = Checkout()
+            checkout.user = buyer
+            checkout.totalAmount = total
+            checkout.shippingAmount = shipping
+            checkout.finalAmount = final
+            checkout.save()
+
+            cart = Request.session.get("cart")
+            #None ki jarurat nhi cart m kyuki yaha tak pahuche hai to card hai kyuki card nhi hoti to tatal 0 hoti 
+            for key,value in cart.items():
+                checkoutProduct = CheckoutProducts()
+                checkoutProduct.checkout = checkout
+                checkoutProduct.pid = int(key)
+                checkoutProduct.name = value['name']
+                checkoutProduct.color = value['color']
+                checkoutProduct.size = value['size']
+                checkoutProduct.price = value['price']
+                checkoutProduct.qty = value['qty']
+                checkoutProduct.total = value['total']
+                checkoutProduct.pic = value['pic']
+                checkoutProduct.save()
+            Request.session['cart']={}
+            Request.session['total']=0
+            Request.session['shipping']=0
+            Request.session['final']=0
+            Request.session['cartCount']=0
+            return HttpResponseRedirect('/confirmation/')
+            # (return HttpResponseRedirect('/confirmation/'))loop k bahar rahenge jitene bhi product hai sabhi ban jaye warna pahla product jo table m jayenge wahi par confirm page par chala  jayega aage nhi jayega
+
+
+
+        else:
+            #Agar total 0 hai to iska matlab card khali hai
+            return HttpResponseRedirect("/cart/")
+
+def confirmationPage(Request):
+    return render(Request,"confirmation.html")
 
 def contact(Request):
     return render(Request,"contact.html")
@@ -218,3 +277,122 @@ def profilePage(Request):
     else:
         buyer = Buyer.objects.get(username=Request.user.username)
     return render(Request,'profile.html',{'data':buyer})
+
+@login_required(login_url="/login/")
+def updateProfilePage(Request):
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect('/admin/')
+    else:
+        buyer = Buyer.objects.get(username=Request.user.username)
+        if(Request.method=="POST"):
+            buyer.name = Request.POST.get("fullname")
+            buyer.email = Request.POST.get("email")
+            buyer.phone = Request.POST.get("phone")
+            buyer.addressline1 = Request.POST.get("addressline1")
+            buyer.addressline2 = Request.POST.get("addressline2")
+            buyer.addressline3 = Request.POST.get("addressline3")
+            buyer.pin = Request.POST.get("pin")
+            buyer.city = Request.POST.get("city")
+            buyer.state = Request.POST.get("state")
+            if (Request.FILES.get("pic")):
+                buyer.pic = Request.FILES.get("pic")
+            buyer.save()
+            return HttpResponseRedirect("/profile")
+    return render(Request,"update-profile.html",{'data':buyer})
+
+def addToCart(Request,num):
+    p = Product.objects.get(id=num)
+    cart = Request.session.get("cart",None)
+    cartCount = Request.session.get("cartCount",0)
+    if(cart):
+        if(str(p.id) in cart):
+            item = cart[str(p.id)]
+            item['qty']=item['qty']+1
+            item['total']=item['total']+p.finalprice
+            cart[str(p.id)]=item
+        else:
+            cart.setdefault(str(p.id),{'name':p.name,'color':p.color,'size':p.size,'price':p.finalprice,'qty':1,'total':p.finalprice,'pic':p.pic1.url})
+    else:
+        cart = {str(p.id):{'name':p.name,'color':p.color,'size':p.size,'price':p.finalprice,'qty':1,'total':p.finalprice,'pic':p.pic1.url}}
+    Request.session['cart']=cart
+    total = 0
+    for value in cart.values():
+        total = total+value['total']
+    if(total<1000 and total>0):
+        shipping = 150
+    else:
+        shipping = 0
+    Request.session['total']=total
+    Request.session['shipping']=shipping
+    Request.session['final']=total+shipping
+    Request.session['cartCount']=cartCount+1
+    return HttpResponseRedirect("/cart/")
+
+
+
+def cartPage(Request):
+    cart = Request.session.get('cart',None)
+    items = []
+    if(cart):
+        for key,value in cart.items():
+            value.setdefault('id',key)
+            items.append(value)
+    total = Request.session.get('total',0)
+    shipping = Request.session.get('shipping',0)
+    final = Request.session.get('final',0)
+    return render(Request,"cart.html",{'cart':items,'total':total,'shipping':shipping,'final':final})
+
+def deleteCartPage(Request,id):
+    cart = Request.session.get("cart",None)
+    cartCount = 0
+    if(cart and id in cart):
+        del cart[id]
+        Request.session['cart']=cart
+
+        total = 0
+        for value in cart.values():
+            total = total+value['total']
+            cartCount = cartCount+value['qty']
+        if(total<1000 and total>0):
+            shipping = 150
+        else:
+            shipping = 0
+        Request.session['total']=total
+        Request.session['shipping']=shipping
+        Request.session['final']=total+shipping
+        Request.session['cartCount']=cartCount
+    return HttpResponseRedirect("/cart/")
+
+
+def updateCartPage(Request,id,op):
+    cart = Request.session.get("cart",None)
+    cartCount = Request.session.get("cartCount",0)
+    if(cart and id in cart):
+        item = cart[id]
+        if(op=="dec" and item['qty']==1):
+            pass
+        elif(op=="dec"):
+            item['qty']=item['qty']-1
+            item['total']=item['total']-item['price']
+            cartCount=cartCount-1  
+        else:
+            item['qty']=item['qty']+1
+            item['total']=item['total']+item['price']
+            cartCount=cartCount+1
+        cart[id]=item 
+        Request.session['cart']=cart
+        Request.session['cartCount']=cartCount
+
+        total = 0
+        for value in cart.values():
+            total = total+value['total']
+        if(total<1000 and total>0):
+            shipping = 150
+        else:
+            shipping = 0
+        Request.session['total']=total
+        Request.session['shipping']=shipping
+        Request.session['final']=total+shipping
+        
+    return HttpResponseRedirect("/cart/")
