@@ -237,6 +237,22 @@ Agar checkout page par total product 0 hai to hum cart page redirect kara denge
 
 aur agar koi direct Checkout url ko bhi hit karega to cart page par chala jayega
 
+Code Pushed on main branch
+
 Start 16-02-2023 part1 :
 
+Add to wishlist and display wishlist: 
+for further purchase
+agar pahle se wishlish m hai to dobara save nhi hona chahiye
 
+Display Order History Section
+#Order ka data 2 table hai 1 m checkout rakhi hai and dusre m us checkout k product
+#Hame checkout and product ko ek sath use karne hai
+
+
+payment = (
+    (0, "Pending"),
+    (1, "Done"),
+)
+paymentStatus=0
+{{item.checkout.get_paymentStatus_display}}=Pending

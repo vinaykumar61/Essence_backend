@@ -11,5 +11,6 @@ admin.site.register(
         Product,
         Checkout,
         CheckoutProducts,
+        Wishlist,        
     )
 )

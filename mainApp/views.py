@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-def home(Request):
+def homePage(Request):
     data = Product.objects.all()
     data = data[::-1]
     data = data[0:10]
@@ -18,7 +18,7 @@ def home(Request):
     return render(Request,"index.html",{'data':data,'brand':brand,'subcategory':subcategory})
 
 @login_required(login_url="/login/")
-def checkout(Request):
+def checkoutPage(Request):
     user = User.objects.get(username=Request.user.username)
     if(user.is_superuser):
         return HttpResponseRedirect('/admin/')
@@ -30,7 +30,7 @@ def checkout(Request):
     return render(Request,"checkout.html",{'data':buyer})
 
 @login_required(login_url="/login/")
-def placeOrder(Request):
+def placeOrderPage(Request):
     user = User.objects.get(username=Request.user.username)
     if(user.is_superuser):
         return HttpResponseRedirect('/admin/')
@@ -79,10 +79,10 @@ def placeOrder(Request):
 def confirmationPage(Request):
     return render(Request,"confirmation.html")
 
-def contact(Request):
+def contactPage(Request):
     return render(Request,"contact.html")
 
-def shop(Request,mc,sc,br):
+def shopPage(Request,mc,sc,br):
 
     if mc=="All" and sc=="All" and br=="All":
         data = Product.objects.all()
@@ -110,7 +110,7 @@ def shop(Request,mc,sc,br):
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
-def priceFilter(Request,mc,sc,br):
+def priceFilterPage(Request,mc,sc,br):
     
     if (Request.method=="POST"):
         min = Request.POST.get("min")
@@ -144,7 +144,7 @@ def priceFilter(Request,mc,sc,br):
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
-def sortFilter(Request,mc,sc,br):
+def sortFilterPage(Request,mc,sc,br):
     
     if (Request.method=="POST"):
         sort = Request.POST.get("sort")
@@ -182,7 +182,7 @@ def sortFilter(Request,mc,sc,br):
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
-def singleProduct(Request,num):
+def singleProductPage(Request,num):
     data = Product.objects.get(id=num)
     return render(Request,"single-product.html",{'data':data})
 
@@ -276,7 +276,19 @@ def profilePage(Request):
         return HttpResponseRedirect('/admin/')
     else:
         buyer = Buyer.objects.get(username=Request.user.username)
-    return render(Request,'profile.html',{'data':buyer})
+        wishlist = Wishlist.objects.filter(user=buyer)
+        #Order History
+        orders = []
+        checkouts = Checkout.objects.filter(user=buyer)
+        for item in checkouts:
+            cp = CheckoutProducts.objects.filter(checkout=item)
+            data = {
+                'checkout':item,
+                'checkoutProduct':cp
+            }
+            orders.append(data)
+        # print(orders)
+    return render(Request,'profile.html',{'data':buyer,'wishlist':wishlist,'orders':orders})
 
 @login_required(login_url="/login/")
 def updateProfilePage(Request):
@@ -301,7 +313,7 @@ def updateProfilePage(Request):
             return HttpResponseRedirect("/profile")
     return render(Request,"update-profile.html",{'data':buyer})
 
-def addToCart(Request,num):
+def addToCartPage(Request,num):
     p = Product.objects.get(id=num)
     cart = Request.session.get("cart",None)
     cartCount = Request.session.get("cartCount",0)
@@ -396,3 +408,35 @@ def updateCartPage(Request,id,op):
         Request.session['final']=total+shipping
         
     return HttpResponseRedirect("/cart/")
+
+@login_required(login_url="/login/")
+def addToWishlistPage(Request,num):
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect("/admin/")
+    else:
+        buyer = Buyer.objects.get(username=Request.user.username)
+        product = Product.objects.get(id=num)
+        try:
+            wishlist = Wishlist.objects.get(user=buyer,product=product)
+        except:
+            wish = Wishlist()
+            wish.user = buyer
+            wish.product = product
+            wish.save()
+        return HttpResponseRedirect("/profile/")
+
+@login_required(login_url="/login/")
+def deleteWishlistPage(Request,num):
+    user = User.objects.get(username=Request.user.username)
+    if(user.is_superuser):
+        return HttpResponseRedirect("/admin/")
+    else:
+        buyer = Buyer.objects.get(username=Request.user.username)
+        product = Product.objects.get(id=num)
+        try:
+            wishlist = Wishlist.objects.get(user=buyer,id=num)
+            wishlist.delete()
+        except:
+            pass
+        return HttpResponseRedirect("/profile/")

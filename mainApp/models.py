@@ -108,7 +108,13 @@ class CheckoutProducts(models.Model):
     total = models.IntegerField()
     pic = models.CharField(max_length=50)
 
+class Wishlist(models.Model):
+    id = models.AutoField(primary_key=True)
+    product = models.ForeignKey(Product,on_delete=models.CASCADE)
+    user = models.ForeignKey(Buyer,on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.user.username +" "+ self.product.name
 
 
 
