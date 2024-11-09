@@ -256,3 +256,35 @@ payment = (
 )
 paymentStatus=0
 {{item.checkout.get_paymentStatus_display}}=Pending
+isko custom templateTags se bhi kar sakte hai django documentation ki help se 20-02
+
+M.Imp. 
+Interview Question:-
+Custom Template Tag kaise banate hai:-
+Ans:- templatetags name ka folder banao usmi file banao use load karo
+Server restart jarur karna 
+
+
+Google Map Website :
+Embed Google Map
+website:- https://www.embedgooglemap.net/
+
+
+
+Admin panel par tables ko database table ki tarah show karna k liye:-
+
+# Register your models here.
+admin.site.register(
+    (              #yaha se us table ko hatana hoga
+        Buyer,
+        Brand,
+        Checkout,
+        CheckoutProducts,
+        Wishlist,   
+        ContactUs,     
+    )
+)
+
+@admin.register(Maincategory)
+class Maincategory(admin.ModelAdmin):
+    list_display = ("id","name")

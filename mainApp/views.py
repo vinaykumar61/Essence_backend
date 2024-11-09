@@ -80,6 +80,16 @@ def confirmationPage(Request):
     return render(Request,"confirmation.html")
 
 def contactPage(Request):
+    if (Request.method=="POST"):
+        c = ContactUs()
+        c.name = Request.POST.get('name')
+        c.email = Request.POST.get('email')
+        c.phone = Request.POST.get('phone')
+        c.subject = Request.POST.get('subject')
+        c.message = Request.POST.get('message')
+        c.save()
+        messages.success(Request,"Thanks to Share Your Query With Us.Our Team Will Contact Soon...")
+        return HttpResponseRedirect('/contact/')
     return render(Request,"contact.html")
 
 def shopPage(Request,mc,sc,br):

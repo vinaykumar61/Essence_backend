@@ -116,5 +116,17 @@ class Wishlist(models.Model):
     def __str__(self):
         return self.user.username +" "+ self.product.name
 
+status=((0,'Active'),(1,'Done'))
+class ContactUs(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=30)
+    email = models.CharField(max_length=50)
+    phone = models.CharField(max_length=15)
+    subject = models.TextField()
+    message = models.TextField()
+    status = models.BooleanField(choices=status,default=0)
+    date = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return str(self.id)+" "+self.name+" "+self.email
 
