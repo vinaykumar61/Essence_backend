@@ -2,25 +2,50 @@ from django.contrib import admin
 from .models import * # To add all tables
 
 # Register your models here.
-admin.site.register(
-    (
-        Buyer,
-        Brand,
-        Checkout,
-        CheckoutProducts,
-        Wishlist,   
-        ContactUs,     
-    )
-)
+# admin.site.register(
+#     (
+#       Maincategory,
+        # Subcategory,
+        # Brand,
+#         ,     
+#     )
+# )
 
 @admin.register(Maincategory)
-class Maincategory(admin.ModelAdmin):
+class MaincategoryAdmin(admin.ModelAdmin):
     list_display = ("id","name")
 
 @admin.register(Subcategory)
-class Subcategory(admin.ModelAdmin):
+class SubcategoryAdmin(admin.ModelAdmin):
     list_display = ("id","name")
+
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ("id","name")
+
 @admin.register(Product)
-class Product(admin.ModelAdmin):
+class ProductAdmin(admin.ModelAdmin):
     list_display = ("id","name","maincategory","subcategory","brand","color","size","baseprice","discount","finalprice","pic1","pic2","pic3","pic4")
+
+@admin.register(Buyer)
+class Buyer(admin.ModelAdmin):
+    list_display = ("id","name","username","email","phone","addressline1","addressline2","addressline3","pin","city","state")
+
+@admin.register(CheckoutProducts)
+class CheckoutProductsAdmin(admin.ModelAdmin):
+    list_display = ("id","checkout","pid","name","color","size","price","qty","total","pic")
+
+@admin.register(Checkout)
+class CheckoutAdmin(admin.ModelAdmin):
+    list_display = ("id","user","orderStatus","paymentStatus","paymentMode","rppid","totalAmount","shippingAmount","finalAmount","time")
+
+@admin.register(Wishlist)
+class WishlistAdmin(admin.ModelAdmin):
+    list_display = ("id","user","product")
+
+@admin.register(ContactUs)
+class ContactUsAdmin(admin.ModelAdmin):
+    list_display = ("id","name","email","phone","subject","message","status","date")
+
+
 

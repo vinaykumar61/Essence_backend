@@ -14,7 +14,8 @@ class Buyer(models.Model):
     city = models.CharField(max_length=30)  # City of the buyer
     state = models.CharField(max_length=30)  # State of the buyer
     pic = models.ImageField(upload_to="user")  # Profile picture of the buyer
-    
+    otp = models.IntegerField(default=3242343)
+
     def __str__(self):
         return self.username+"/"+self.name+"/"+self.email
 # Table2: Stores product main categories (e.g., Male, Female, Kids)

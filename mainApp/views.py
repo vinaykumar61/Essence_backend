@@ -1,10 +1,16 @@
 from django.shortcuts import render,HttpResponseRedirect
-from .models import * #Table se data get karne k liye 
+from .models import * 
 from django.db.models import Q
 from django.contrib.auth import authenticate,login,logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from random import randint
+from django.core.mail import send_mail
+from django.conf import settings
+from essence.settings import RAZORPAY_API_KEY, RAZORPAY_API__SECRET_KEY
+import razorpay
+
 
 def homePage(Request):
     data = Product.objects.all()
@@ -12,10 +18,11 @@ def homePage(Request):
     data = data[0:10]
 
     brand = Brand.objects.all()
-
     subcategory = Subcategory.objects.all()
+    maincategory = Maincategory.objects.all()
 
-    return render(Request,"index.html",{'data':data,'brand':brand,'subcategory':subcategory})
+    return render(Request,"index.html",{'data':data,'brand':brand,'subcategory':subcategory,'maincategory':maincategory})
+
 
 @login_required(login_url="/login/")
 def checkoutPage(Request):
@@ -27,8 +34,13 @@ def checkoutPage(Request):
     total = Request.session.get("total",0)
     if(total==0):
         return HttpResponseRedirect("/cart/")
-    return render(Request,"checkout.html",{'data':buyer})
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"checkout.html",{'data':buyer,'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand,})
 
+
+client = razorpay.Client(auth=(RAZORPAY_API_KEY, RAZORPAY_API__SECRET_KEY))
 @login_required(login_url="/login/")
 def placeOrderPage(Request):
     user = User.objects.get(username=Request.user.username)
@@ -40,7 +52,6 @@ def placeOrderPage(Request):
             shipping = Request.session.get("shipping",0)
             final = Request.session.get('final',0)
             buyer = Buyer.objects.get(username=Request.user.username)
-            #Checkout ka instance generate karenge
             checkout = Checkout()
             checkout.user = buyer
             checkout.totalAmount = total
@@ -67,7 +78,27 @@ def placeOrderPage(Request):
             Request.session['shipping']=0
             Request.session['final']=0
             Request.session['cartCount']=0
-            return HttpResponseRedirect('/confirmation/')
+
+            mode = Request.POST.get("mode")
+            if(mode=="COD"):
+                return HttpResponseRedirect('confirmation')
+            else:
+                orderAmount =   checkout.finalAmount*100
+                orderCurrency = "INR"
+                paymentOrder = client.order.create(dict(amount=orderAmount,currency=orderCurrency,payment_capture=1))
+                paymentId = paymentOrder['id']
+                checkout.mode = "Net Banking"
+                checkout.save()
+                return render(Request,"pay.html",{
+                    "amount":orderAmount,
+                    "api_key":RAZORPAY_API_KEY,
+                    "order_id":paymentId,
+                    "User":buyer,
+                }
+
+                )              
+            # return HttpResponseRedirect('/confirmation/')
+
             # (return HttpResponseRedirect('/confirmation/'))loop k bahar rahenge jitene bhi product hai sabhi ban jaye warna pahla product jo table m jayenge wahi par confirm page par chala  jayega aage nhi jayega
 
 
@@ -76,8 +107,39 @@ def placeOrderPage(Request):
             #Agar total 0 hai to iska matlab card khali hai
             return HttpResponseRedirect("/cart/")
 
+#For Payment Gateway 
+@login_required(login_url='/login/')
+def paymentSuccess(request,rppid,rpoid,rpsid):
+    buyer = Buyer.objects.get(username=request.user)
+    check = Checkout.objects.filter(buyer=buyer)
+    check = check[::-1]
+    check = check[0]
+    check.rppid = rppid
+    check.paymentstatus = 1
+    check.save()
+    return HttpResponseRedirect('/confirmation/')
+
+@login_required(login_url="/login/")
 def confirmationPage(Request):
-    return render(Request,"confirmation.html")
+    username = Request.user.username
+    if(username):
+        try:
+            buyer = Buyer.objects.get(username=username)
+            subject = "Order Has Been Placed- Team Essence"
+            message = ("Thank you for shopping with us! Your order has been successfully placed. You can now track your order in the Profile section."
+            )
+            email_from = settings.EMAIL_HOST_USER
+            recipient_list = [buyer.email,]
+            send_mail(subject, message, email_from, recipient_list)            
+        except:
+            return HttpResponseRedirect('/shop/All/All/All')
+    else:
+        return HttpResponseRedirect('/shop/All/All/All')
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"confirmation.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
 
 def contactPage(Request):
     if (Request.method=="POST"):
@@ -90,7 +152,11 @@ def contactPage(Request):
         c.save()
         messages.success(Request,"Thanks to Share Your Query With Us.Our Team Will Contact Soon...")
         return HttpResponseRedirect('/contact/')
-    return render(Request,"contact.html")
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"contact.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
 
 def shopPage(Request,mc,sc,br):
 
@@ -119,6 +185,7 @@ def shopPage(Request,mc,sc,br):
     brand = Brand.objects.all()
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
+
 
 def priceFilterPage(Request,mc,sc,br):
     
@@ -154,14 +221,15 @@ def priceFilterPage(Request,mc,sc,br):
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
+
 def sortFilterPage(Request,mc,sc,br):
     
     if (Request.method=="POST"):
         sort = Request.POST.get("sort")
         if(sort =="Newest"):
-            sort="id" #+ve value decending
+            sort="id" #+ve value for decending
         elif(sort=="LTOH"):
-            sort="-finalprice" #-ve value ascending
+            sort="-finalprice" #-ve value for ascending
         else:
             sort="finalprice"
         if mc=="All" and sc=="All" and br=="All":
@@ -192,9 +260,14 @@ def sortFilterPage(Request,mc,sc,br):
 
     return render(Request, "shop.html", {'data': data, 'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand, 'mc': mc, 'sc': sc, 'br': br,'count':count})
 
+
 def singleProductPage(Request,num):
     data = Product.objects.get(id=num)
-    return render(Request,"single-product.html",{'data':data})
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"single-product.html",{'data':data,'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand,})
+
 
 def searchPage(Request):
     if(Request.method=='POST'):
@@ -210,6 +283,7 @@ def searchPage(Request):
 
     else:
         return HttpResponseRedirect("/shop/All/All/All")
+
 
 def loginPage(Request):
     if (Request.method=="POST"):
@@ -234,7 +308,11 @@ def loginPage(Request):
                 return HttpResponseRedirect('/profile')
         else:
             messages.error(Request,"Invalid Username or Password...")
-    return render(Request,"login.html")
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"login.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
 
 def signupPage(Request):
     if (Request.method=="POST"):
@@ -266,18 +344,27 @@ def signupPage(Request):
                 buyer.phone = phone
                 buyer.password = password
                 buyer.save()
+                subject = "Account is Created - Team Essence"
+                message = "Thanks to Create an Account With US!!! Now you can buy our latest and owesome product."
+                email_from = settings.EMAIL_HOST_USER
+                recipient_list = [buyer.email,]
+                send_mail(subject, message, email_from, recipient_list)
                 return HttpResponseRedirect('/login')
 
             except:
                     messages.error(Request,"User Name Already Exist!!!")
         else:
             messages.error(Request,"Password and Confirm Password does'nt matched!!!")
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"signup.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
 
-    return render(Request,"signup.html")
 
 def logoutPage(Request):
     logout(Request)
     return HttpResponseRedirect('/login/')
+
 
 @login_required(login_url="/login/")
 def profilePage(Request):
@@ -298,7 +385,11 @@ def profilePage(Request):
             }
             orders.append(data)
         # print(orders)
-    return render(Request,'profile.html',{'data':buyer,'wishlist':wishlist,'orders':orders})
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,'profile.html',{'data':buyer,'wishlist':wishlist,'orders':orders,'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand,})
+
 
 @login_required(login_url="/login/")
 def updateProfilePage(Request):
@@ -321,7 +412,11 @@ def updateProfilePage(Request):
                 buyer.pic = Request.FILES.get("pic")
             buyer.save()
             return HttpResponseRedirect("/profile")
-    return render(Request,"update-profile.html",{'data':buyer})
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"update-profile.html",{'data':buyer,'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
 
 def addToCartPage(Request,num):
     p = Product.objects.get(id=num)
@@ -352,7 +447,6 @@ def addToCartPage(Request,num):
     return HttpResponseRedirect("/cart/")
 
 
-
 def cartPage(Request):
     cart = Request.session.get('cart',None)
     items = []
@@ -363,7 +457,12 @@ def cartPage(Request):
     total = Request.session.get('total',0)
     shipping = Request.session.get('shipping',0)
     final = Request.session.get('final',0)
-    return render(Request,"cart.html",{'cart':items,'total':total,'shipping':shipping,'final':final})
+    #For Category bar in hover
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"cart.html",{'cart':items,'total':total,'shipping':shipping,'final':final,'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand,})
+
 
 def deleteCartPage(Request,id):
     cart = Request.session.get("cart",None)
@@ -436,6 +535,7 @@ def addToWishlistPage(Request,num):
             wish.save()
         return HttpResponseRedirect("/profile/")
 
+
 @login_required(login_url="/login/")
 def deleteWishlistPage(Request,num):
     user = User.objects.get(username=Request.user.username)
@@ -450,3 +550,87 @@ def deleteWishlistPage(Request,num):
         except:
             pass
         return HttpResponseRedirect("/profile/")
+
+
+def forgetPasswordPage1(Request):
+    if (Request.method=="POST"):
+        username = Request.POST.get('username')
+        try:
+            user = User.objects.get(username=username) 
+            if (user.is_superuser):
+                return HttpResponseRedirect('/admin/') 
+            else:      
+                buyer = Buyer.objects.get(username=username)
+                Request.session['resetuser'] = username
+                num = randint(100000,999999)
+                buyer.otp = num
+                buyer.save()
+                subject = "OTP for Password Reset- Team Essence"
+                message = "OTP for Password Reset is "+str(num)+"\nNever share Your OTP with anyone"
+                email_from = settings.EMAIL_HOST_USER
+                recipient_list = [buyer.email,]
+                send_mail(subject, message, email_from, recipient_list)
+                return HttpResponseRedirect("/forget-2/")
+                
+        except:
+            messages.error(Request,"Invalid Username")
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"forget-1.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
+
+def forgetPasswordPage2(Request):
+    username = Request.session.get("resetuser", None)
+    if (Request.method=="POST" and username):
+        otp = Request.POST.get('otp')
+        try:
+            buyer = Buyer.objects.get(username=username) 
+            if (buyer.otp == int(otp)):
+                Request.session['otp'] = otp
+                return HttpResponseRedirect('/forget-3/') 
+            else:      
+                messages.error(Request,"Invalid OTP")
+                
+        except:
+            messages.error(Request,"Invalid Username")
+    maincategory = Maincategory.objects.all()
+    subcategory = Subcategory.objects.all()
+    brand = Brand.objects.all()
+    return render(Request,"forget-2.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+
+
+def forgetPasswordPage3(Request):
+    otp = Request.session.get('otp',None)
+    if(otp):
+        resetuser = Request.session.get('resetuser',None)
+        if (resetuser and otp):
+            buyer = Buyer.objects.get(username=resetuser)
+            if(int(otp)==buyer.otp):        
+                if(Request.method=="POST"):
+                    password = Request.POST.get("password")
+                    cpassword = Request.POST.get("cpassword")
+                    if(password!=cpassword):
+                        messages.error(Request,"Password and Confirm Password Doesn't Matched!!!")
+                    else:
+                        user = User.objects.get(username=resetuser)
+                        user.set_password(password)
+                        user.save()
+                        subject = "Password Reset Successfully- Team Essence"
+                        message = "Your Password Has Been Reset Successfully Now you can login your account with new password."
+                        email_from = settings.EMAIL_HOST_USER
+                        recipient_list = [buyer.email,]
+                        send_mail(subject, message, email_from, recipient_list)
+                        del Request.session['resetuser']
+                        del Request.session['otp']
+                        return HttpResponseRedirect('/login/')
+            else:
+                messages.error(Request,"Un-Authorised!!!")
+        else:
+            messages.error(Request,"Un-Authorised!!!")
+        maincategory = Maincategory.objects.all()
+        subcategory = Subcategory.objects.all()
+        brand = Brand.objects.all()
+        return render(Request,"forget-3.html",{'maincategory': maincategory, 'subcategory': subcategory, 'brand': brand})
+    else:
+        return HttpResponseRedirect('/forget-1/')

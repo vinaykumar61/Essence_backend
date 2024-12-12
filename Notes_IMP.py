@@ -288,3 +288,29 @@ admin.site.register(
 @admin.register(Maincategory)
 class Maincategory(admin.ModelAdmin):
     list_display = ("id","name")
+
+#app k urls usi app k under rakhne hai na ki project folder ki urls.py 
+
+21-02:- completed
+
+Start
+22-02: 
+
+23-02:
+
+agar koi forget-2 par direct hit karta hai
+wishlist issue
+confirmation new page
+
+
+27-02:
+Payment Gateway Integration:-
+Razorpay:- Indian 
+charges:- 2% / transaction
+Joining Fees - No Razorpay koi joining fees nhi leta 
+
+
+Mercent ID:- PMqT4z7Krnxo4u
+
+Key Id:?
+Secret Key?
